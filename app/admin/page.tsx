@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatINR } from "@/components/ProductCard";
 import { api } from "@/lib/client";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import type { Customer, Order, Product, User } from "@/lib/types";
 
 const STATUSES: Order["status"][] = ["pending", "processing", "shipped", "delivered", "cancelled"];
@@ -24,6 +25,7 @@ type Tab = "products" | "orders" | "customers" | "team";
 
 export default function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const isFounder = user?.role === "founder";
   const [tab, setTab] = useState<Tab>("products");
@@ -201,7 +203,7 @@ export default function AdminPanel() {
             Products you publish here appear instantly in the store. Signed in as <b>{user.name}</b> ({user.role}).
           </p>
         </div>
-        <span className="rounded-full bg-gold px-3 py-1 text-xs font-extrabold text-kumkum-dark">🛠 {isFounder ? "Founder / Super admin" : "Admin panel"}</span>
+        <span className="rounded-full bg-gold px-3 py-1 text-xs font-extrabold text-kumkum-dark">{t("adminPanel")}</span>
       </div>
 
       {/* Tabs */}

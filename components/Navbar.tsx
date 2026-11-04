@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { LANGS, useI18n } from "@/lib/i18n";
 
 const ROLE_BADGE: Record<string, string> = {
   customer: "bg-emerald-100 text-emerald-700",
@@ -15,9 +16,20 @@ const ROLE_BADGE: Record<string, string> = {
 export default function Navbar() {
   const { user, loading, signOut } = useAuth();
   const { count, setOpen } = useCart();
+  const { lang, setLang, t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
 
   const submitSearch = () => {
     router.push(q.trim() ? `/?q=${encodeURIComponent(q.trim())}` : "/");
@@ -33,6 +45,8 @@ export default function Navbar() {
       {label}
     </Link>
   );
+
+  const current = LANGS.find((l) => l.code === lang) ?? LANGS[0];
 
   return (
     <header className="sticky top-1 z-40 shadow-card">
@@ -56,7 +70,7 @@ export default function Navbar() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submitSearch()}
-                placeholder="Search Indiva.in — Bharat ki apni dukaan"
+                placeholder={t("search")}
                 className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-sm text-ink outline-none placeholder:text-[#a08464]"
               />
               <button
@@ -69,20 +83,45 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Account + Cart */}
+          {/* Right cluster */}
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+            {/* Language switcher */}
+            <div className="relative" ref={langRef}>
+              <button
+                onClick={() => setLangOpen((o) => !o)}
+                className="flex items-center gap-1 rounded-md px-2 py-2 text-sm font-bold text-white hover:outline hover:outline-1 hover:outline-gold/70"
+                title={t("lang")}
+              >
+                🌐 <span className="hidden sm:inline">{current.native}</span>
+              </button>
+              {langOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1 max-h-80 w-44 overflow-y-auto rounded-xl border border-gold/50 bg-cream py-1 text-sm font-semibold text-kumkum-dark shadow-xl">
+                  {LANGS.map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => { setLang(l.code as typeof lang); setLangOpen(false); }}
+                      className={`block w-full px-4 py-2 text-left hover:bg-sandal ${l.code === lang ? "bg-sandal font-extrabold" : ""}`}
+                    >
+                      {l.native}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Account */}
             {!loading && !user && (
               <Link href="/signin" className="rounded-md px-2 py-2 leading-tight hover:outline hover:outline-1 hover:outline-gold/70">
-                <span className="block text-[11px] text-gold-light/90">Namaste, sign in</span>
-                <span className="block text-sm font-bold text-white">Account &amp; Lists</span>
+                <span className="block text-[11px] text-gold-light/90">{t("hello")}</span>
+                <span className="block text-sm font-bold text-white">{t("account")}</span>
               </Link>
             )}
             {!loading && user && (
               <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:outline hover:outline-1 hover:outline-gold/70">
                 <div className="leading-tight">
-                  <span className="block text-[11px] text-gold-light/90">Namaste, {user.name.split(" ")[0]}</span>
+                  <span className="block text-[11px] text-gold-light/90">{t("hello").split(",")[0]}, {user.name.split(" ")[0]}</span>
                   <span className="block text-sm font-bold text-white">
-                    Account{" "}
+                    {t("account")}{" "}
                     <span className={`ml-1 rounded-full px-1.5 py-px text-[10px] font-bold capitalize ${ROLE_BADGE[user.role]}`}>{user.role}</span>
                   </span>
                 </div>
@@ -90,20 +129,22 @@ export default function Navbar() {
                   onClick={() => signOut().then(() => router.push("/"))}
                   className="hidden rounded-md border border-gold/50 px-2 py-1 text-xs font-semibold text-gold-light hover:bg-white/10 sm:block"
                 >
-                  Sign out
+                  {t("signout")}
                 </button>
               </div>
             )}
+
+            {/* Cart */}
             <button
               onClick={() => setOpen(true)}
               className="relative flex items-center gap-1.5 rounded-md px-2 py-2 hover:outline hover:outline-1 hover:outline-gold/70"
-              aria-label="Open cart"
+              aria-label={t("cart")}
             >
               <span className="text-xl">🧺</span>
               {count > 0 && (
                 <span className="pop absolute -top-0.5 left-4 rounded-full bg-gold px-1.5 py-px text-xs font-black text-kumkum-dark">{count}</span>
               )}
-              <span className="hidden text-sm font-bold text-white sm:block">Cart</span>
+              <span className="hidden text-sm font-bold text-white sm:block">{t("cart")}</span>
             </button>
           </div>
         </div>
@@ -115,7 +156,7 @@ export default function Navbar() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submitSearch()}
-              placeholder="Search Indiva.in"
+              placeholder={t("search")}
               className="min-w-0 flex-1 bg-transparent px-4 py-2 text-sm text-ink outline-none"
             />
             <button onClick={submitSearch} className="bg-[#FF9933] px-4 text-kumkum-dark" aria-label="Search">🔍</button>
@@ -123,17 +164,17 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Secondary nav — cream strip with heritage links */}
+      {/* Secondary nav — cream strip */}
       <div className="border-b border-gold/40 bg-cream">
         <nav className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-1.5 text-sm font-semibold sm:px-6">
-          {navLink("/", "☰ Sab kuch")}
-          {navLink("/", "Bestsellers")}
-          {navLink("/", "Naye Product")}
-          {navLink("/", "Aaj ki Offers")}
-          {user?.role === "founder" && navLink("/founder", "👑 Founder")}
-          {(user?.role === "admin" || user?.role === "founder") && navLink("/admin", "🛠 Admin")}
+          {navLink("/", `🏠 ${t("all")}`)}
+          {navLink("/", `🏷️ ${t("offers")}`)}
+          {navLink("/", `✨ ${t("new")}`)}
+          {navLink("/", `🔥 ${t("best")}`)}
+          {user?.role === "founder" && navLink("/founder", `👑 ${t("founder")}`)}
+          {(user?.role === "admin" || user?.role === "founder") && navLink("/admin", `🛠 ${t("admin")}`)}
           <span className="ml-auto hidden shrink-0 items-center gap-1 rounded-full border border-kumkum/30 bg-white px-2.5 py-0.5 text-[11px] font-extrabold text-kumkum sm:inline-flex">
-            🇮🇳 100% MADE IN INDIA
+            {t("madein")}
           </span>
         </nav>
       </div>

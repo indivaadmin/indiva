@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
+
 import type { Product } from "@/lib/types";
 
 export function formatINR(n: number): string {
@@ -16,6 +18,7 @@ const emojiFor: Record<string, string> = {
 };
 
 export default function ProductCard({ product, onAdd }: { product: Product; onAdd?: (p: Product) => void }) {
+  const { t } = useI18n();
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-gold/40 bg-white shadow-card transition hover:-translate-y-1 hover:shadow-lg">
       {/* tricolor top edge */}
@@ -23,13 +26,13 @@ export default function ProductCard({ product, onAdd }: { product: Product; onAd
       <div className={`relative flex h-44 items-center justify-center bg-gradient-to-br ${product.image} text-6xl`}>
         <span className="drop-shadow-sm transition group-hover:scale-110">{emojiFor[product.category] ?? "📦"}</span>
         {product.featured && (
-          <span className="absolute left-3 top-3 rounded-full border border-kumkum/20 bg-cream px-2.5 py-1 text-xs font-extrabold text-kumkum shadow">⭐ Featured</span>
+          <span className="absolute left-3 top-3 rounded-full border border-kumkum/20 bg-cream px-2.5 py-1 text-xs font-extrabold text-kumkum shadow">{t("featured")}</span>
         )}
         {product.stock <= 5 && product.stock > 0 && (
-          <span className="absolute right-3 top-3 rounded-full bg-kumkum px-2.5 py-1 text-xs font-bold text-cream shadow">Only {product.stock} left</span>
+          <span className="absolute right-3 top-3 rounded-full bg-kumkum px-2.5 py-1 text-xs font-bold text-cream shadow">{t("onlyLeft", { n: product.stock })}</span>
         )}
         {product.stock === 0 && (
-          <span className="absolute right-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow">Sold out</span>
+          <span className="absolute right-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow">{t("soldOut")}</span>
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
@@ -46,7 +49,7 @@ export default function ProductCard({ product, onAdd }: { product: Product; onAd
             onClick={() => onAdd?.(product)}
             className="rounded-lg bg-kumkum px-3.5 py-2 text-sm font-bold text-cream transition hover:bg-kumkum-dark disabled:cursor-not-allowed disabled:bg-sandal disabled:text-[#a08464]"
           >
-            {product.stock === 0 ? "Sold out" : "Add to cart"}
+            {product.stock === 0 ? t("soldOut") : t("addCart")}
           </button>
         </div>
       </div>
