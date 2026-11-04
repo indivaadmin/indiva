@@ -51,7 +51,7 @@ export default function CartDrawer() {
     <>
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white shadow-lg">{toast}</div>
+        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-kumkum-dark px-5 py-2.5 text-sm font-semibold text-white shadow-lg">{toast}</div>
       )}
 
       {/* Cart drawer */}
@@ -91,7 +91,7 @@ export default function CartDrawer() {
                 <button
                   onClick={checkout}
                   disabled={placing}
-                  className="mt-3 w-full rounded-xl bg-[#FF9933] py-3 font-bold text-white transition hover:bg-[#f97316] disabled:bg-slate-300"
+                  className="mt-3 w-full rounded-xl bg-kumkum py-3 font-bold text-cream transition hover:bg-kumkum-dark disabled:bg-slate-300"
                 >
                   {placing ? "Placing order…" : `Proceed to checkout — ${formatINR(total)}`}
                 </button>
@@ -111,7 +111,7 @@ export default function CartDrawer() {
               Thanks {confirmed.customerName}! Order <span className="font-bold text-ink">{confirmed.id}</span> for{" "}
               <span className="font-bold text-ink">{formatINR(confirmed.total)}</span> is confirmed and will appear in the founder dashboard and admin panel.
             </p>
-            <button onClick={() => setConfirmed(null)} className="mt-6 w-full rounded-xl bg-ink py-3 font-bold text-white hover:bg-brand-600">Continue shopping</button>
+            <button onClick={() => setConfirmed(null)} className="mt-6 w-full rounded-xl bg-kumkum py-3 font-bold text-cream hover:bg-kumkum-dark">Continue shopping</button>
           </div>
         </div>
       )}

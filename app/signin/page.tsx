@@ -41,7 +41,7 @@ function SignInForm() {
     <div className="mx-auto max-w-md px-4 py-16">
       <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-card">
         <div className="text-center">
-          <span className="text-3xl">🇮🇳</span>
+          <span className="text-3xl">🪔</span>
           <h1 className="mt-2 text-2xl font-black">Welcome back</h1>
           <p className="mt-1 text-sm text-slate-500">Sign in to your Indiva account</p>
         </div>
@@ -52,7 +52,7 @@ function SignInForm() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email address"
             type="email"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-kumkum focus:ring-2 focus:ring-kumkum/15"
           />
           <input
             value={password}
@@ -60,18 +60,18 @@ function SignInForm() {
             placeholder="Password"
             type="password"
             onKeyDown={(e) => e.key === "Enter" && submit()}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-kumkum focus:ring-2 focus:ring-kumkum/15"
           />
         </div>
         <button
           onClick={submit}
           disabled={busy}
-          className="mt-5 w-full rounded-xl bg-brand-600 py-3 font-bold text-white shadow-card transition hover:bg-brand-700 disabled:bg-slate-300"
+          className="mt-5 w-full rounded-xl bg-kumkum py-3 font-bold text-cream shadow-card transition hover:bg-kumkum-dark disabled:bg-slate-300"
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>
         <p className="mt-4 text-center text-sm text-slate-500">
-          New customer? <Link href="/signup" className="font-bold text-brand-600 hover:underline">Create an account</Link>
+          New customer? <Link href="/signup" className="font-bold text-kumkum hover:underline">Create an account</Link>
         </p>
         <p className="mt-2 text-center text-xs text-slate-400">
           Admin accounts are not created here — they are assigned by the founder from the admin panel.

@@ -60,7 +60,7 @@ export default function FounderDashboard() {
   const kpis = [
     { label: "Total revenue", value: formatINR(analytics.revenue), icon: "💰", tint: "bg-emerald-100 text-emerald-700" },
     { label: "Orders", value: String(analytics.orders), icon: "🧾", tint: "bg-brand-100 text-brand-700" },
-    { label: "Customers", value: String(analytics.customers), icon: "👥", tint: "bg-indigo-100 text-indigo-700" },
+    { label: "Customers", value: String(analytics.customers), icon: "👥", tint: "bg-indigo-100 text-kumkum" },
     { label: "Avg. order value", value: formatINR(Math.round(analytics.avgOrderValue)), icon: "📊", tint: "bg-amber-100 text-amber-700" },
   ];
 
@@ -72,7 +72,7 @@ export default function FounderDashboard() {
           <h1 className="mt-1 text-3xl font-black sm:text-4xl">Business overview</h1>
           <p className="mt-1 text-sm text-slate-500">Revenue, customers and product performance for Indiva — live from the API. Welcome, {user.name}.</p>
         </div>
-        <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">👑 Founder dashboard</span>
+        <span className="rounded-full bg-kumkum px-3 py-1 text-xs font-bold text-cream">👑 Founder dashboard</span>
       </div>
 
       {analytics.orders === 0 && (

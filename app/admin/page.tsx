@@ -201,7 +201,7 @@ export default function AdminPanel() {
             Products you publish here appear instantly in the store. Signed in as <b>{user.name}</b> ({user.role}).
           </p>
         </div>
-        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">🛠 {isFounder ? "Founder / Super admin" : "Admin panel"}</span>
+        <span className="rounded-full bg-gold px-3 py-1 text-xs font-extrabold text-kumkum-dark">🛠 {isFounder ? "Founder / Super admin" : "Admin panel"}</span>
       </div>
 
       {/* Tabs */}
@@ -211,7 +211,7 @@ export default function AdminPanel() {
             key={key}
             onClick={() => setTab(key)}
             className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-bold transition ${
-              tab === key ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-ink"
+              tab === key ? "border-brand-600 text-kumkum" : "border-transparent text-slate-500 hover:text-ink"
             }`}
           >
             {label}
@@ -223,13 +223,13 @@ export default function AdminPanel() {
       {tab === "products" && (
         <div className="mt-6">
           <div className="flex justify-end">
-            <button onClick={openCreate} className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-card hover:bg-brand-700">
+            <button onClick={openCreate} className="rounded-xl bg-kumkum px-4 py-2.5 text-sm font-bold text-cream shadow-card hover:bg-kumkum-dark">
               + Publish product
             </button>
           </div>
 
           {showForm && (
-            <div className="fade-up mt-4 rounded-2xl border border-brand-200 bg-brand-50/50 p-5 shadow-card">
+            <div className="fade-up mt-4 rounded-2xl border border-gold/60 bg-cream p-5 shadow-card">
               <h3 className="font-extrabold">{editing ? `Edit ${editing.name}` : "New product (goes live on the store immediately)"}</h3>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -245,7 +245,7 @@ export default function AdminPanel() {
                 </label>
               </div>
               <div className="mt-4 flex gap-2">
-                <button onClick={saveProduct} className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-brand-600">Save</button>
+                <button onClick={saveProduct} className="rounded-lg bg-kumkum px-4 py-2 text-sm font-bold text-cream hover:bg-kumkum-dark">Save</button>
                 <button onClick={() => setShowForm(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Cancel</button>
               </div>
             </div>
@@ -274,7 +274,7 @@ export default function AdminPanel() {
                   {products.map((p) => (
                     <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
                       <td className="px-4 py-3">
-                        <p className="font-bold">{p.name} {p.featured && <span className="ml-1 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">FEATURED</span>}</p>
+                        <p className="font-bold">{p.name} {p.featured && <span className="ml-1 rounded bg-cream px-1.5 py-0.5 text-[10px] font-bold text-kumkum">FEATURED</span>}</p>
                         <p className="text-xs text-slate-400">{p.id}</p>
                       </td>
                       <td className="px-4 py-3">{p.category}</td>
@@ -351,7 +351,7 @@ export default function AdminPanel() {
               {customers.map((c) => (
                 <div key={c.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-black text-brand-700">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-black text-kumkum">
                       {c.name.split(" ").map((w) => w[0]).join("")}
                     </span>
                     <div>
@@ -363,7 +363,7 @@ export default function AdminPanel() {
                     <span className="text-slate-500">Orders</span><span className="font-bold">{c.orders}</span>
                   </div>
                   <div className="mt-1 flex justify-between text-sm">
-                    <span className="text-slate-500">Total spent</span><span className="font-extrabold text-brand-700">{formatINR(c.spent)}</span>
+                    <span className="text-slate-500">Total spent</span><span className="font-extrabold text-kumkum">{formatINR(c.spent)}</span>
                   </div>
                   <p className="mt-2 text-[11px] text-slate-400">Joined {new Date(c.joinedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
                 </div>
@@ -391,7 +391,7 @@ export default function AdminPanel() {
                 <input value={adminForm.email} onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} placeholder="Admin email" type="email" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                 <input value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} placeholder="Temporary password" type="password" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                 <div className="flex gap-2 sm:col-span-3">
-                  <button onClick={createAdmin} className="rounded-lg bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-brand-600">Create admin</button>
+                  <button onClick={createAdmin} className="rounded-lg bg-kumkum px-4 py-2 text-sm font-bold text-cream hover:bg-kumkum-dark">Create admin</button>
                   <button onClick={() => setShowAdminForm(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Cancel</button>
                 </div>
               </div>
