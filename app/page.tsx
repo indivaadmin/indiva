@@ -1,30 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import ProductCard, { formatINR } from "@/components/ProductCard";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import ProductCard from "@/components/ProductCard";
 import { api } from "@/lib/client";
-import { useAuth } from "@/lib/auth-context";
-import type { Order, Product } from "@/lib/types";
+import { useCart } from "@/lib/cart-context";
+import type { Product } from "@/lib/types";
 
-interface CartLine {
-  product: Product;
-  qty: number;
-}
-
-export default function CustomerStorefront() {
-  const { user } = useAuth();
+function Storefront() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const query = params.get("q") ?? "";
+  const { add } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState("All");
-  const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [toast, setToast] = useState("");
-  const [placing, setPlacing] = useState(false);
-  const [confirmed, setConfirmed] = useState<Order | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
 
   const refresh = useCallback(async () => {
     const [all, sug] = await Promise.all([
@@ -40,12 +31,9 @@ export default function CustomerStorefront() {
     refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    if (user) {
-      setName((n) => n || user.name);
-      setEmail((e) => e || user.email);
-    }
-  }, [user]);
+  const setQuery = (v: string) => {
+    router.replace(v ? `/?q=${encodeURIComponent(v)}` : "/", { scroll: false });
+  };
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -55,213 +43,110 @@ export default function CustomerStorefront() {
     });
   }, [products, category, query]);
 
-  const cartCount = cart.reduce((s, l) => s + l.qty, 0);
-  const cartTotal = cart.reduce((s, l) => s + l.qty * l.product.price, 0);
-
-  const addToCart = (p: Product) => {
-    setCart((prev) => {
-      const found = prev.find((l) => l.product.id === p.id);
-      if (found) return prev.map((l) => (l.product.id === p.id ? { ...l, qty: Math.min(l.qty + 1, l.product.stock) } : l));
-      return [...prev, { product: p, qty: 1 }];
-    });
-    setToast(`${p.name} added to cart`);
-    setTimeout(() => setToast(""), 2200);
-  };
-
-  const setQty = (id: string, qty: number) => {
-    setCart((prev) =>
-      qty <= 0
-        ? prev.filter((l) => l.product.id !== id)
-        : prev.map((l) => (l.product.id === id ? { ...l, qty: Math.min(qty, l.product.stock) } : l))
-    );
-  };
-
-  const checkout = async () => {
-    if (!name.trim() || !email.trim()) {
-      setToast("Please enter your name and email");
-      setTimeout(() => setToast(""), 2200);
-      return;
-    }
-    setPlacing(true);
-    const data = await api<{ order?: Order; error?: string }>("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customerName: name,
-        email,
-        items: cart.map((l) => ({ productId: l.product.id, qty: l.qty })),
-      }),
-    });
-    setPlacing(false);
-    if (!data.order) {
-      setToast(data.error ?? "Could not place order");
-      setTimeout(() => setToast(""), 2500);
-      return;
-    }
-    setConfirmed(data.order);
-    setCart([]);
-    setCartOpen(false);
-    refresh();
-  };
+  const deals = useMemo(() => products.filter((p) => p.featured).slice(0, 4), [products]);
 
   return (
     <div>
-      {/* Hero — Indian tricolor gradient */}
-      <section className="bg-gradient-to-br from-[#FF9933] via-[#f97316] to-[#138808] text-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-          <p className="fade-up text-sm font-bold uppercase tracking-widest text-orange-100">🇮🇳 Proudly Made in India</p>
-          <h1 className="fade-up mt-3 max-w-2xl text-4xl font-black leading-tight sm:text-6xl" style={{ animationDelay: "80ms" }}>
+      {/* Hero banner — Amazon style */}
+      <section className="relative bg-gradient-to-b from-[#FF9933]/90 via-[#f97316]/80 to-slate-100">
+        <div className="mx-auto max-w-7xl px-4 pb-40 pt-12 sm:px-6 sm:pt-16">
+          <p className="fade-up text-xs font-bold uppercase tracking-widest text-white/90">🇮🇳 Proudly Made in India</p>
+          <h1 className="fade-up mt-2 max-w-2xl text-3xl font-black leading-tight text-white drop-shadow sm:text-5xl" style={{ animationDelay: "80ms" }}>
             Swadeshi picks, delivered to your doorstep.
           </h1>
-          <p className="fade-up mt-4 max-w-xl text-lg text-orange-50" style={{ animationDelay: "160ms" }}>
-            Shop electronics, home goods and fashion from Indiva — every price in ₹, with smart suggestions and fast checkout.
+          <p className="fade-up mt-3 max-w-xl text-base text-white/90" style={{ animationDelay: "160ms" }}>
+            Electronics, handicrafts, home goods and more — every price in ₹, with fast checkout.
           </p>
-          <div className="fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: "240ms" }}>
-            <a href="#shop" className="rounded-xl bg-white px-6 py-3 font-bold text-[#c2410c] shadow-card transition hover:bg-orange-50">Shop now</a>
-            {suggestions.length > 0 && (
-              <a href="#suggestions" className="rounded-xl border border-white/40 px-6 py-3 font-bold text-white transition hover:bg-white/10">See suggestions</a>
-            )}
-          </div>
+          {query && (
+            <p className="fade-up mt-4 inline-block rounded-full bg-white/90 px-4 py-1.5 text-sm font-bold text-ink shadow" style={{ animationDelay: "220ms" }}>
+              Search results for “{query}” — {filtered.length} item{filtered.length === 1 ? "" : "s"}{" "}
+              <button onClick={() => setQuery("")} className="ml-1 text-brand-600 underline">clear</button>
+            </p>
+          )}
         </div>
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-slate-100" aria-hidden />
       </section>
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
-        <section id="suggestions" className="mx-auto max-w-7xl px-4 pt-12 sm:px-6">
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="text-2xl font-extrabold">Suggested for you</h2>
-              <p className="text-sm text-slate-500">Hand-picked featured picks from our catalog</p>
-            </div>
-          </div>
-          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {suggestions.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} onAdd={addToCart} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Shop */}
-      <section id="shop" className="mx-auto max-w-7xl px-4 pt-14 sm:px-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-extrabold">All products</h2>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search products…"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-72"
-          />
-        </div>
-        {categories.length > 1 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+      {/* Category strip */}
+      {categories.length > 1 && (
+        <div className="mx-auto -mt-24 max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-card">
             {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCategory(c)}
                 className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
-                  category === c ? "bg-ink text-white" : "border border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                  category === c ? "bg-ink text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
                 {c}
               </button>
             ))}
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Today's deals */}
+      {deals.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+          <h2 className="text-2xl font-extrabold">Today's Deals 🏷️</h2>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {deals.map((p) => (
+              <ProductCard key={p.id} product={p} onAdd={add} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Suggestions */}
+      {suggestions.length > 0 && deals.length === 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+          <h2 className="text-2xl font-extrabold">Suggested for you</h2>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {suggestions.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} onAdd={add} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* All products */}
+      <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-2xl font-extrabold">{query ? "Results" : "All products"}</h2>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search Indiva.in…"
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-72"
+          />
+        </div>
         {filtered.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-card">
             <span className="text-5xl">🇮🇳</span>
-            <p className="mt-4 text-lg font-extrabold">No products yet</p>
+            <p className="mt-4 text-lg font-extrabold">{query ? `No results for “${query}”` : "No products yet"}</p>
             <p className="mt-1 text-sm text-slate-500">
-              Our team is curating the first Made-in-India collection. Check back soon — new products appear here as soon as they are published!
+              {query
+                ? "Try a different search term."
+                : "Our team is curating the first Made-in-India collection. Check back soon — new products appear here as soon as they are published!"}
             </p>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} onAdd={addToCart} />
+              <ProductCard key={p.id} product={p} onAdd={add} />
             ))}
           </div>
         )}
       </section>
-
-      {/* Floating cart button */}
-      {cartCount > 0 && (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-5 py-3.5 font-bold text-white shadow-lg transition hover:bg-brand-600"
-        >
-          🛒 Cart
-          <span className="pop rounded-full bg-brand-500 px-2 py-0.5 text-xs">{cartCount}</span>
-        </button>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white shadow-lg">{toast}</div>
-      )}
-
-      {/* Cart drawer */}
-      {cartOpen && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setCartOpen(false)} />
-          <aside className="slide-in absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h3 className="text-lg font-extrabold">Your cart ({cartCount})</h3>
-              <button onClick={() => setCartOpen(false)} className="rounded-lg px-2 py-1 text-xl text-slate-500 hover:bg-slate-100">✕</button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {cart.length === 0 && <p className="py-10 text-center text-slate-400">Your cart is empty.</p>}
-              {cart.map((l) => (
-                <div key={l.product.id} className="flex items-center gap-3 border-b border-slate-100 py-3">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${l.product.image} text-2xl`}>📦</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold">{l.product.name}</p>
-                    <p className="text-xs text-slate-500">{formatINR(l.product.price)} each</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setQty(l.product.id, l.qty - 1)} className="h-7 w-7 rounded-md border border-slate-300 font-bold">−</button>
-                    <span className="w-6 text-center text-sm font-bold">{l.qty}</span>
-                    <button onClick={() => setQty(l.product.id, l.qty + 1)} className="h-7 w-7 rounded-md border border-slate-300 font-bold">+</button>
-                  </div>
-                  <span className="w-20 text-right text-sm font-extrabold">{formatINR(l.product.price * l.qty)}</span>
-                </div>
-              ))}
-            </div>
-            {cart.length > 0 && (
-              <div className="border-t border-slate-200 px-5 py-4">
-                <div className="flex justify-between text-sm"><span className="text-slate-500">Subtotal</span><span className="font-extrabold">{formatINR(cartTotal)}</span></div>
-                <div className="mt-3 space-y-2">
-                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500" />
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" type="email" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500" />
-                </div>
-                <button
-                  onClick={checkout}
-                  disabled={placing}
-                  className="mt-3 w-full rounded-xl bg-brand-600 py-3 font-bold text-white transition hover:bg-brand-700 disabled:bg-slate-300"
-                >
-                  {placing ? "Placing order…" : `Checkout — ${formatINR(cartTotal)}`}
-                </button>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
-
-      {/* Order confirmation */}
-      {confirmed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="pop w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">✅</div>
-            <h3 className="mt-4 text-2xl font-extrabold">Order placed — dhanyavaad!</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Thanks {confirmed.customerName}! Order <span className="font-bold text-ink">{confirmed.id}</span> for{" "}
-              <span className="font-bold text-ink">{formatINR(confirmed.total)}</span> is confirmed and will appear in the founder dashboard and admin panel.
-            </p>
-            <button onClick={() => setConfirmed(null)} className="mt-6 w-full rounded-xl bg-ink py-3 font-bold text-white hover:bg-brand-600">Continue shopping</button>
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+export default function CustomerStorefront() {
+  return (
+    <Suspense fallback={<p className="py-20 text-center text-slate-400">Loading…</p>}>
+      <Storefront />
+    </Suspense>
   );
 }
