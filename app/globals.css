@@ -10,6 +10,42 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ---- Indian heritage decorative patterns ---- */
+
+/* Textile-style zigzag border (saffron / white / green triangles) */
+.india-border {
+  height: 12px;
+  background:
+    linear-gradient(135deg, #ff9933 25%, transparent 25%) -6px 0 / 12px 12px,
+    linear-gradient(225deg, #ff9933 25%, transparent 25%) -6px 0 / 12px 12px,
+    linear-gradient(45deg, #138808 25%, #ffffff 25%, #138808 75%, transparent 75%) 0 0 / 12px 12px,
+    linear-gradient(315deg, #138808 25%, #ffffff 25%, #138808 75%, transparent 75%) 0 0 / 12px 12px;
+  background-color: #ffffff;
+}
+
+/* Rangoli dot mandala overlay for hero/banners */
+.hero-pattern {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22) 0 2px, transparent 3px),
+    radial-gradient(circle at 50% 50%, rgba(112, 18, 38, 0.10) 0 7px, transparent 8px),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.14) 0 13px, transparent 14px);
+  background-size: 44px 44px;
+}
+
+/* Paisley-ish scallop edge (like a toran / temple arch trim) */
+.scallop-edge {
+  height: 14px;
+  background: radial-gradient(circle at 10px -4px, transparent 11px, currentColor 12px);
+  background-size: 20px 14px;
+  background-repeat: repeat-x;
+}
+
+/* Thin tricolor rule used on cards */
+.tricolor-line {
+  height: 3px;
+  background: linear-gradient(90deg, #ff9933 0 33.3%, #ffffff 33.3% 66.6%, #138808 66.6% 100%);
+}
+
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }

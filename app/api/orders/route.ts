@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, listOrders } from "@/lib/db";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+/** List orders — admin or founder only. */
+export async function GET(req: NextRequest) {
+  const auth = requireRole(req, ["admin", "founder"]);
+  if ("response" in auth) return auth.response;
   return NextResponse.json({ orders: listOrders() });
 }
 
+/** Place an order — public (customers). */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteProduct, getProduct, suggestProducts, updateProduct } from "@/lib/db";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 }
 
 export async function PUT(req: NextRequest, ctx: Ctx) {
+  const auth = requireRole(req, ["admin", "founder"]);
+  if ("response" in auth) return auth.response;
   const { id } = await ctx.params;
   const body = await req.json();
   const patch: Record<string, unknown> = {};
@@ -24,7 +27,9 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   return NextResponse.json({ product: updated });
 }
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
+export async function DELETE(req: NextRequest, ctx: Ctx) {
+  const auth = requireRole(req, ["admin", "founder"]);
+  if ("response" in auth) return auth.response;
   const { id } = await ctx.params;
   if (!deleteProduct(id)) return NextResponse.json({ error: "Product not found" }, { status: 404 });
   return NextResponse.json({ ok: true });

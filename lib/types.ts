@@ -1,5 +1,21 @@
 export type Role = "customer" | "founder" | "admin";
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: Role;
+  createdAt: string;
+  createdBy?: string; // set when a founder creates an admin account
+}
+
+export interface Session {
+  token: string;
+  userId: string;
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -7,12 +23,13 @@ export interface Product {
   price: number; // in INR
   category: string;
   tags: string[];
-  image: string; // emoji / gradient placeholder rendered as art
+  image: string; // gradient class used for product art
   rating: number;
   reviews: number;
   stock: number;
   featured?: boolean;
   createdAt: string;
+  createdBy?: string;
 }
 
 export interface CartItem {

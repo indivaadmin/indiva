@@ -4,30 +4,43 @@ const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
+        // Saffron-led palette inspired by Indian heritage
         brand: {
-          50: "#eef6ff",
-          100: "#d9eaff",
-          200: "#bcdbff",
-          300: "#8ec4ff",
-          400: "#59a3ff",
-          500: "#3380fc",
-          600: "#1b62f1",
-          700: "#144ce1",
-          800: "#173fb6",
-          900: "#193a8f",
-          950: "#142557",
+          50: "#fff7ed",
+          100: "#ffedd5",
+          200: "#fed7aa",
+          300: "#fdba74",
+          400: "#fb923c",
+          500: "#f97316",
+          600: "#ea580c",
+          700: "#c2410c",
+          800: "#9a3412",
+          900: "#7c2d12",
+          950: "#431407",
         },
-        ink: "#0f172a",
+        // Indian heritage accents
+        kumkum: { DEFAULT: "#9E1B32", dark: "#701226", light: "#C2455E" },
+        gold: { DEFAULT: "#D4A017", light: "#F0C75E" },
+        cream: "#FFF6E5",
+        sandal: "#F3E3C3",
+        india: {
+          saffron: "#FF9933",
+          white: "#FFFFFF",
+          green: "#138808",
+          chakra: "#06038D",
+        },
+        ink: "#2b1a12",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        card: "0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.08)",
+        card: "0 1px 2px rgba(43,26,18,.08), 0 8px 24px rgba(158,27,50,.10)",
       },
     },
   },
