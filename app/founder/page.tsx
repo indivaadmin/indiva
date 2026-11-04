@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatINR } from "@/components/ProductCard";
 import { api } from "@/lib/client";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import type { Analytics, Order } from "@/lib/types";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -18,6 +19,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function FounderDashboard() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,7 +74,7 @@ export default function FounderDashboard() {
           <h1 className="mt-1 text-3xl font-black sm:text-4xl">Business overview</h1>
           <p className="mt-1 text-sm text-slate-500">Revenue, customers and product performance for Indiva — live from the API. Welcome, {user.name}.</p>
         </div>
-        <span className="rounded-full bg-kumkum px-3 py-1 text-xs font-bold text-cream">👑 Founder dashboard</span>
+        <span className="rounded-full bg-kumkum px-3 py-1 text-xs font-bold text-cream">{t("founderDash")}</span>
       </div>
 
       {analytics.orders === 0 && (
