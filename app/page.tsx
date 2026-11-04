@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ProductCard, { formatINR } from "@/components/ProductCard";
+import { api } from "@/lib/client";
+import { useAuth } from "@/lib/auth-context";
 import type { Order, Product } from "@/lib/types";
 
 interface CartLine {
@@ -10,6 +12,7 @@ interface CartLine {
 }
 
 export default function CustomerStorefront() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -25,17 +28,24 @@ export default function CustomerStorefront() {
 
   const refresh = useCallback(async () => {
     const [all, sug] = await Promise.all([
-      fetch("/api/products").then((r) => r.json() as Promise<{ products: Product[] }>),
-      fetch("/api/suggestions").then((r) => r.json() as Promise<{ products: Product[] }>),
+      api<{ products: Product[] }>("/api/products"),
+      api<{ products: Product[] }>("/api/suggestions"),
     ]);
     setProducts(all.products);
     setSuggestions(sug.products);
-    setCategories(["All", ...Array.from(new Set(all.products.map((p: Product) => p.category)))]);
+    setCategories(["All", ...Array.from(new Set(all.products.map((p) => p.category)))]);
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (user) {
+      setName((n) => n || user.name);
+      setEmail((e) => e || user.email);
+    }
+  }, [user]);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -73,7 +83,7 @@ export default function CustomerStorefront() {
       return;
     }
     setPlacing(true);
-    const res = await fetch("/api/orders", {
+    const data = await api<{ order?: Order; error?: string }>("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -82,9 +92,8 @@ export default function CustomerStorefront() {
         items: cart.map((l) => ({ productId: l.product.id, qty: l.qty })),
       }),
     });
-    const data = await res.json();
     setPlacing(false);
-    if (!res.ok) {
+    if (!data.order) {
       setToast(data.error ?? "Could not place order");
       setTimeout(() => setToast(""), 2500);
       return;
@@ -97,37 +106,41 @@ export default function CustomerStorefront() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-brand-700 via-brand-600 to-indigo-700 text-white">
+      {/* Hero — Indian tricolor gradient */}
+      <section className="bg-gradient-to-br from-[#FF9933] via-[#f97316] to-[#138808] text-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-          <p className="fade-up text-sm font-bold uppercase tracking-widest text-brand-100">New season collection</p>
+          <p className="fade-up text-sm font-bold uppercase tracking-widest text-orange-100">🇮🇳 Proudly Made in India</p>
           <h1 className="fade-up mt-3 max-w-2xl text-4xl font-black leading-tight sm:text-6xl" style={{ animationDelay: "80ms" }}>
-            Everyday essentials, curated for you.
+            Swadeshi picks, delivered to your doorstep.
           </h1>
-          <p className="fade-up mt-4 max-w-xl text-lg text-brand-100" style={{ animationDelay: "160ms" }}>
-            Shop electronics, home goods and fashion picks from Indiva — with smart suggestions and fast checkout.
+          <p className="fade-up mt-4 max-w-xl text-lg text-orange-50" style={{ animationDelay: "160ms" }}>
+            Shop electronics, home goods and fashion from Indiva — every price in ₹, with smart suggestions and fast checkout.
           </p>
           <div className="fade-up mt-8 flex flex-wrap gap-3" style={{ animationDelay: "240ms" }}>
-            <a href="#shop" className="rounded-xl bg-white px-6 py-3 font-bold text-brand-700 shadow-card transition hover:bg-brand-50">Shop now</a>
-            <a href="#suggestions" className="rounded-xl border border-white/40 px-6 py-3 font-bold text-white transition hover:bg-white/10">See suggestions</a>
+            <a href="#shop" className="rounded-xl bg-white px-6 py-3 font-bold text-[#c2410c] shadow-card transition hover:bg-orange-50">Shop now</a>
+            {suggestions.length > 0 && (
+              <a href="#suggestions" className="rounded-xl border border-white/40 px-6 py-3 font-bold text-white transition hover:bg-white/10">See suggestions</a>
+            )}
           </div>
         </div>
       </section>
 
       {/* Suggestions */}
-      <section id="suggestions" className="mx-auto max-w-7xl px-4 pt-12 sm:px-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl font-extrabold">Suggested for you</h2>
-            <p className="text-sm text-slate-500">Hand-picked featured picks from our catalog</p>
+      {suggestions.length > 0 && (
+        <section id="suggestions" className="mx-auto max-w-7xl px-4 pt-12 sm:px-6">
+          <div className="flex items-end justify-between">
+            <div>
+              <h2 className="text-2xl font-extrabold">Suggested for you</h2>
+              <p className="text-sm text-slate-500">Hand-picked featured picks from our catalog</p>
+            </div>
           </div>
-        </div>
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {suggestions.slice(0, 4).map((p) => (
-            <ProductCard key={p.id} product={p} onAdd={addToCart} />
-          ))}
-        </div>
-      </section>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {suggestions.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} onAdd={addToCart} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Shop */}
       <section id="shop" className="mx-auto max-w-7xl px-4 pt-14 sm:px-6">
@@ -140,35 +153,48 @@ export default function CustomerStorefront() {
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-72"
           />
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
-                category === c ? "bg-ink text-white" : "bg-white text-slate-600 border border-slate-200 hover:border-slate-400"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} onAdd={addToCart} />
-          ))}
-          {filtered.length === 0 && <p className="col-span-full py-12 text-center text-slate-400">No products match your search.</p>}
-        </div>
+        {categories.length > 1 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+                  category === c ? "bg-ink text-white" : "border border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+        {filtered.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-card">
+            <span className="text-5xl">🇮🇳</span>
+            <p className="mt-4 text-lg font-extrabold">No products yet</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Our team is curating the first Made-in-India collection. Check back soon — new products appear here as soon as they are published!
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((p) => (
+              <ProductCard key={p.id} product={p} onAdd={addToCart} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Floating cart button */}
-      <button
-        onClick={() => setCartOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-5 py-3.5 font-bold text-white shadow-lg transition hover:bg-brand-600"
-      >
-        🛒 Cart
-        {cartCount > 0 && <span className="pop rounded-full bg-brand-500 px-2 py-0.5 text-xs">{cartCount}</span>}
-      </button>
+      {cartCount > 0 && (
+        <button
+          onClick={() => setCartOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-ink px-5 py-3.5 font-bold text-white shadow-lg transition hover:bg-brand-600"
+        >
+          🛒 Cart
+          <span className="pop rounded-full bg-brand-500 px-2 py-0.5 text-xs">{cartCount}</span>
+        </button>
+      )}
 
       {/* Toast */}
       {toast && (
@@ -227,7 +253,7 @@ export default function CustomerStorefront() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="pop w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">✅</div>
-            <h3 className="mt-4 text-2xl font-extrabold">Order placed!</h3>
+            <h3 className="mt-4 text-2xl font-extrabold">Order placed — dhanyavaad!</h3>
             <p className="mt-2 text-sm text-slate-500">
               Thanks {confirmed.customerName}! Order <span className="font-bold text-ink">{confirmed.id}</span> for{" "}
               <span className="font-bold text-ink">{formatINR(confirmed.total)}</span> is confirmed and will appear in the founder dashboard and admin panel.

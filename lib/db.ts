@@ -1,13 +1,18 @@
-import type { Analytics, Customer, Order, Product } from "./types";
+import { createHash, randomBytes } from "crypto";
+import type { Analytics, Customer, Order, Product, Role, Session, User } from "./types";
 
 /**
  * Server-side data layer.
  *
- * Uses an in-memory store seeded with demo data. On Vercel each serverless
- * instance keeps its own warm copy (module-level cache), so reads/writes are
- * consistent for the lifetime of the instance. Swap `db` for a real database
- * (Vercel Postgres / KV / Blob) by re-implementing these functions — the API
- * routes and UI stay unchanged.
+ * Starts EMPTY — no sample products, orders or customers. Real data appears
+ * only when the founder/admin publishes products and customers place orders.
+ * The only seeded record is the founder (owner) account, whose credentials
+ * are set via env vars (INDIVA_FOUNDER_EMAIL / INDIVA_FOUNDER_PASSWORD).
+ *
+ * Uses an in-memory store. On Vercel each serverless instance keeps its own
+ * warm copy, so reads/writes are consistent for the lifetime of the instance.
+ * Swap `db` for a real database (Vercel Postgres / KV) by re-implementing
+ * these functions — the API routes and UI stay unchanged.
  */
 
 declare global {
@@ -16,108 +21,145 @@ declare global {
 }
 
 interface DB {
+  users: User[];
+  sessions: Session[];
   products: Product[];
   orders: Order[];
   customers: Customer[];
-  seq: { product: number; order: number; customer: number };
+  seq: { user: number; product: number; order: number; customer: number };
 }
 
-const gradients = [
-  "from-rose-400 to-orange-300",
-  "from-sky-400 to-indigo-400",
-  "from-emerald-400 to-teal-300",
-  "from-violet-400 to-fuchsia-300",
-  "from-amber-400 to-pink-400",
-  "from-cyan-400 to-blue-500",
-  "from-lime-400 to-emerald-400",
-  "from-fuchsia-400 to-purple-500",
-];
+export const FOUNDER_EMAIL = process.env.INDIVA_FOUNDER_EMAIL ?? "indiva.founder@gmail.com";
+export const FOUNDER_PASSWORD = process.env.INDIVA_FOUNDER_PASSWORD ?? "1234678";
 
-function seedProducts(): Product[] {
-  const now = new Date().toISOString();
-  const defs: Array<Omit<Product, "id" | "image" | "createdAt">> = [
-    { name: "Aurora Wireless Headphones", description: "Noise-cancelling over-ear headphones with 40-hour battery, plush memory-foam cups and studio-grade drivers.", price: 8999, category: "Electronics", tags: ["audio", "wireless", "gadget"], rating: 4.8, reviews: 412, stock: 34, featured: true },
-    { name: "Nimbus Smart Watch", description: "AMOLED display, heart-rate + SpO2 tracking, GPS and 10-day battery life in a 42mm aluminium case.", price: 12499, category: "Electronics", tags: ["wearable", "fitness", "gadget"], rating: 4.6, reviews: 287, stock: 21, featured: true },
-    { name: "Terra Ceramic Mug Set (4)", description: "Hand-glazed stoneware mugs in earthy tones. Dishwasher and microwave safe, 350ml each.", price: 1499, category: "Home & Kitchen", tags: ["kitchen", "ceramic", "gift"], rating: 4.9, reviews: 198, stock: 60 },
-    { name: "Lumen Desk Lamp", description: "Dimmable LED desk lamp with wireless charging base and five colour temperatures.", price: 3299, category: "Home & Kitchen", tags: ["lighting", "desk", "home"], rating: 4.5, reviews: 96, stock: 45 },
-    { name: "Verve Cotton Oversized Tee", description: "Heavyweight 240gsm organic cotton tee with a relaxed boxy fit. Pre-shrunk and colourfast.", price: 1299, category: "Fashion", tags: ["clothing", "cotton", "basics"], rating: 4.7, reviews: 231, stock: 120, featured: true },
-    { name: "Atlas Canvas Backpack", description: "Water-resistant 22L backpack with a padded 15\" laptop sleeve and hidden anti-theft pocket.", price: 4599, category: "Fashion", tags: ["bag", "travel", "everyday"], rating: 4.8, reviews: 176, stock: 38 },
-    { name: "Bloom Scented Candle Trio", description: "Soy-wax candles — Jasmine, Sandalwood and Citrus. 60-hour burn time, lead-free wicks.", price: 1899, category: "Home & Kitchen", tags: ["candle", "gift", "home"], rating: 4.6, reviews: 84, stock: 52 },
-    { name: "Pulse Bluetooth Speaker", description: "20W portable speaker with 360° sound, IPX7 waterproofing and 18-hour playtime.", price: 5499, category: "Electronics", tags: ["audio", "bluetooth", "outdoor"], rating: 4.4, reviews: 143, stock: 27 },
-    { name: "Drift Linen Shirt", description: "Breathable European linen shirt in soft white — perfect for summer days and beach evenings.", price: 2799, category: "Fashion", tags: ["clothing", "linen", "summer"], rating: 4.5, reviews: 67, stock: 44 },
-    { name: "Haven Insulated Bottle", description: "1L double-wall stainless bottle keeps drinks cold for 24h or hot for 12h. Leak-proof cap.", price: 2199, category: "Home & Kitchen", tags: ["bottle", "travel", "fitness"], rating: 4.7, reviews: 154, stock: 73 },
-    { name: "Pixel Mechanical Keyboard", description: "Hot-swappable 75% mechanical keyboard with PBT keycaps, gasket mount and tri-mode connectivity.", price: 7999, category: "Electronics", tags: ["keyboard", "gaming", "gadget"], rating: 4.9, reviews: 322, stock: 19, featured: true },
-    { name: "Muse Leather Wallet", description: "Slim RFID-blocking wallet in full-grain leather with room for 8 cards and folded notes.", price: 2499, category: "Fashion", tags: ["leather", "wallet", "gift"], rating: 4.6, reviews: 118, stock: 55 },
-  ];
-  return defs.map((d, i) => ({
-    ...d,
-    id: `p${String(i + 1).padStart(3, "0")}`,
-    image: gradients[i % gradients.length],
-    createdAt: now,
-  }));
+/* ---------------- password + token helpers ---------------- */
+
+export function hashPassword(password: string, salt = randomBytes(16).toString("hex")): string {
+  const hash = createHash("sha256").update(salt + password).digest("hex");
+  return `${salt}:${hash}`;
 }
 
-function seedCustomers(): Customer[] {
-  const names = [
-    ["Ananya Sharma", "ananya.sharma@example.com"],
-    ["Rahul Verma", "rahul.verma@example.com"],
-    ["Priya Nair", "priya.nair@example.com"],
-    ["Karthik R", "karthik.r@example.com"],
-    ["Meera Iyer", "meera.iyer@example.com"],
-    ["Arjun Menon", "arjun.menon@example.com"],
-    ["Divya Pillai", "divya.pillai@example.com"],
-    ["Vikram Singh", "vikram.singh@example.com"],
-  ];
-  return names.map(([name, email], i) => ({
-    id: `c${String(i + 1).padStart(3, "0")}`,
-    name,
+export function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  return createHash("sha256").update(salt + password).digest("hex") === hash;
+}
+
+function newToken(): string {
+  return randomBytes(24).toString("hex");
+}
+
+/* ---------------- users & sessions ---------------- */
+
+export function publicUser(u: User): Omit<User, "passwordHash"> {
+  const { passwordHash, ...rest } = u;
+  return rest;
+}
+
+export function findUserByEmail(email: string): User | undefined {
+  return getDb().users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+}
+
+export function signUp(input: { name: string; email: string; password: string; role?: Role }): User {
+  const db = getDb();
+  const email = input.email.trim().toLowerCase();
+  if (!email || !input.password) throw new Error("Email and password are required");
+  if (findUserByEmail(email)) throw new Error("An account with this email already exists");
+  // Public sign-up can only create CUSTOMER accounts.
+  // Admin accounts are created exclusively by the founder (see createAdminByFounder).
+  const role: Role = input.role === "admin" || input.role === "founder" ? "customer" : "customer";
+  db.seq.user += 1;
+  const user: User = {
+    id: `u${String(db.seq.user).padStart(3, "0")}`,
+    name: input.name.trim(),
     email,
-    orders: 0,
-    spent: 0,
-    joinedAt: new Date(Date.now() - (i * 37 + 11) * 86400000).toISOString(),
-  }));
+    passwordHash: hashPassword(input.password),
+    role,
+    createdAt: new Date().toISOString(),
+  };
+  db.users.push(user);
+  return user;
 }
 
-function seedOrders(products: Product[], customers: Customer[]): Order[] {
-  const statuses: Order["status"][] = ["delivered", "shipped", "processing", "pending", "delivered", "delivered", "shipped", "cancelled", "delivered", "processing"];
-  const orders: Order[] = [];
-  for (let i = 0; i < 24; i++) {
-    const dayOffset = Math.floor(Math.random() * 14);
-    const createdAt = new Date(Date.now() - dayOffset * 86400000 - Math.floor(Math.random() * 86400000)).toISOString();
-    const cust = customers[i % customers.length];
-    const count = 1 + Math.floor(Math.random() * 3);
-    const items = Array.from({ length: count }, () => {
-      const p = products[Math.floor(Math.random() * products.length)];
-      const qty = 1 + Math.floor(Math.random() * 2);
-      return { productId: p.id, name: p.name, price: p.price, qty };
-    });
-    const total = items.reduce((s, it) => s + it.price * it.qty, 0);
-    orders.push({
-      id: `o${String(1000 + i)}`,
-      customerName: cust.name,
-      email: cust.email,
-      items,
-      total,
-      status: statuses[i % statuses.length],
-      createdAt,
-    });
-  }
-  // roll up customer stats
-  for (const o of orders) {
-    const c = customers.find((c) => c.email === o.email);
-    if (c && o.status !== "cancelled") {
-      c.orders += 1;
-      c.spent += o.total;
-    }
-  }
-  return orders.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+/** Founder-only: assign an admin account. */
+export function createAdminByFounder(founder: User, input: { name: string; email: string; password: string }): User {
+  if (founder.role !== "founder") throw new Error("Only the founder can create admin accounts");
+  const db = getDb();
+  const email = input.email.trim().toLowerCase();
+  if (!email || !input.password) throw new Error("Email and password are required");
+  if (findUserByEmail(email)) throw new Error("An account with this email already exists");
+  db.seq.user += 1;
+  const user: User = {
+    id: `u${String(db.seq.user).padStart(3, "0")}`,
+    name: input.name.trim(),
+    email,
+    passwordHash: hashPassword(input.password),
+    role: "admin",
+    createdAt: new Date().toISOString(),
+    createdBy: founder.id,
+  };
+  db.users.push(user);
+  return user;
 }
+
+export function signIn(email: string, password: string): { user: User; token: string } {
+  const user = findUserByEmail(email);
+  if (!user || !verifyPassword(password, user.passwordHash)) {
+    throw new Error("Invalid email or password");
+  }
+  const db = getDb();
+  const session: Session = { token: newToken(), userId: user.id, createdAt: new Date().toISOString() };
+  db.sessions.push(session);
+  return { user, token: session.token };
+}
+
+export function signOut(token: string): void {
+  const db = getDb();
+  db.sessions = db.sessions.filter((s) => s.token !== token);
+}
+
+export function userForToken(token: string | null | undefined): User | undefined {
+  if (!token) return undefined;
+  const db = getDb();
+  const session = db.sessions.find((s) => s.token === token);
+  if (!session) return undefined;
+  return db.users.find((u) => u.id === session.userId);
+}
+
+export function listUsers(): User[] {
+  return getDb().users;
+}
+
+export function deleteUser(id: string, requester: User): boolean {
+  if (requester.role !== "founder") return false;
+  const db = getDb();
+  const target = db.users.find((u) => u.id === id);
+  if (!target || target.role === "founder" || target.id === requester.id) return false;
+  db.users = db.users.filter((u) => u.id !== id);
+  db.sessions = db.sessions.filter((s) => s.userId !== id);
+  return true;
+}
+
+/* ---------------- seed (founder only — everything else starts empty) ---------------- */
 
 function buildDb(): DB {
-  const products = seedProducts();
-  const customers = seedCustomers();
-  const orders = seedOrders(products, customers);
-  return { products, orders, customers, seq: { product: products.length, order: 1024, customer: customers.length } };
+  const now = new Date().toISOString();
+  const founder: User = {
+    id: "u001",
+    name: "Indiva Founder",
+    email: FOUNDER_EMAIL,
+    passwordHash: hashPassword(FOUNDER_PASSWORD),
+    role: "founder",
+    createdAt: now,
+  };
+  return {
+    users: [founder],
+    sessions: [],
+    products: [],
+    orders: [],
+    customers: [],
+    seq: { user: 1, product: 0, order: 1000, customer: 0 },
+  };
 }
 
 export function getDb(): DB {
@@ -135,15 +177,27 @@ export function getProduct(id: string): Product | undefined {
   return getDb().products.find((p) => p.id === id);
 }
 
-export function createProduct(input: Omit<Product, "id" | "createdAt" | "rating" | "reviews" | "image"> & Partial<Pick<Product, "rating" | "reviews" | "image">>): Product {
+export function createProduct(
+  actor: User,
+  input: Omit<Product, "id" | "createdAt" | "rating" | "reviews" | "image" | "createdBy"> & Partial<Pick<Product, "rating" | "reviews" | "image">>
+): Product {
   const db = getDb();
   db.seq.product += 1;
+  const gradients = [
+    "from-orange-400 to-amber-300",
+    "from-sky-400 to-indigo-400",
+    "from-emerald-400 to-teal-300",
+    "from-violet-400 to-fuchsia-300",
+    "from-amber-400 to-pink-400",
+    "from-cyan-400 to-blue-500",
+  ];
   const product: Product = {
     id: `p${String(db.seq.product).padStart(3, "0")}`,
     rating: 0,
     reviews: 0,
     image: gradients[db.seq.product % gradients.length],
     createdAt: new Date().toISOString(),
+    createdBy: actor.id,
     ...input,
   };
   db.products.unshift(product);
@@ -169,7 +223,7 @@ export function deleteProduct(id: string): boolean {
 export function suggestProducts(productId: string, limit = 4): Product[] {
   const products = getDb().products;
   const current = products.find((p) => p.id === productId);
-  if (!current) return products.slice(0, limit);
+  if (!current) return products.filter((p) => p.featured).slice(0, limit);
   const scored = products
     .filter((p) => p.id !== productId)
     .map((p) => {
@@ -218,11 +272,10 @@ export function createOrder(input: { customerName: string; email: string; items:
     createdAt: new Date().toISOString(),
   };
   db.orders.unshift(order);
-  // update / create customer rollup
-  let cust = db.customers.find((c) => c.email === input.email);
+  let cust = db.customers.find((c) => c.email === input.email.toLowerCase());
   if (!cust) {
     db.seq.customer += 1;
-    cust = { id: `c${String(db.seq.customer).padStart(3, "0")}`, name: input.customerName, email: input.email, orders: 0, spent: 0, joinedAt: new Date().toISOString() };
+    cust = { id: `c${String(db.seq.customer).padStart(3, "0")}`, name: input.customerName, email: input.email.toLowerCase(), orders: 0, spent: 0, joinedAt: new Date().toISOString() };
     db.customers.unshift(cust);
   }
   cust.orders += 1;
